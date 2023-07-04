@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# Variables
+NODE_NAME="worker-node-1"
+K3S_URL="https://master-node:6443"
+K3S_TOKEN_FILE="/var/lib/rancher/k3s/server/node-token"
+TOKEN=""
+
+# Fetch token from master node
+if [ -f "${K3S_TOKEN_FILE}" ]; then
+    TOKEN=$(sudo cat ${K3S_TOKEN_FILE})
+else
+    echo "Error: Token file does not exist."
+    exit 1
+fi
+
+# Dispatch token to worker nodes
+if [ -z "${TOKEN}" ]; then
+    echo "Error: Token is empty."
+    exit 1
+else
+    echo "K3S_TOKEN=${TOKEN}" > /etc/rancher/k3s/config.env
+    echo "K3S_URL=${K3S_URL}" >> /etc/rancher/k3s/config.env
+    echo "K3S_NODE_NAME=${NODE_NAME}" >> /etc/rancher/k3s/config.env
+    curl -sfL https://get.k3s.io | sh -
+fi
+
+# Print status
+if [ $? -eq 0 ]; then
+    echo "K3s installed successfully on ${NODE_NAME}."
+else
+    echo "Error: K3s installation failed."
+    exit 1
+fi
